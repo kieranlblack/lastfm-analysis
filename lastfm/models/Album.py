@@ -1,7 +1,7 @@
 from typing import Set
 
-import lastfm.models.Artist as Artist
 from lastfm.models.PrettyPrintable import PrettyPrintable
+import lastfm.models.Artist as Artist
 import lastfm.models.Song as Song
 
 

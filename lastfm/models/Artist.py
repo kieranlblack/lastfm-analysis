@@ -1,7 +1,7 @@
 from typing import Set
 
-import lastfm.models.Album as Album
 from lastfm.models.PrettyPrintable import PrettyPrintable
+import lastfm.models.Album as Album
 
 
 class Artist(PrettyPrintable):

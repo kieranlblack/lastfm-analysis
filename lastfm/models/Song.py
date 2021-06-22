@@ -1,6 +1,6 @@
+from lastfm.models.PrettyPrintable import PrettyPrintable
 import lastfm.models.Album as Album
 import lastfm.models.Artist as Artist
-from lastfm.models.PrettyPrintable import PrettyPrintable
 
 
 class Song(PrettyPrintable):
