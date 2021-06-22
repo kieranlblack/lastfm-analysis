@@ -6,8 +6,9 @@ from typing import List, Optional
 import requests
 
 from lastfm.api.Methods import Methods
-from lastfm.models.User import User
+from lastfm.models.Listen import Listen
 from lastfm.models.Song import Song
+from lastfm.models.User import User
 
 
 class UserMethods(Methods):
@@ -24,24 +25,25 @@ class UserMethods(Methods):
         }
         return self._get_request("user.getrecenttracks", params)
 
-    def _map_recent_tracks(self, tracks: List[dict]) -> List[Song]:
-        def map_response_track(track):
+    def _map_recent_tracks(self, tracks: List[dict]) -> List[Listen]:
+        def map_response_track(track: dict) -> Optional[Listen]:
             try:
                 now_playing = track["@attr"]["nowplaying"]
                 if now_playing == "true":
                     return None
             except KeyError:
                 pass
-            return Song(track["name"], track["artist"]["#text"], track["album"]["#text"])
+            song = Song(track["name"], track["artist"]["#text"], track["album"]["#text"])
+            return Listen(song, int(track["date"]["uts"]))
         return list(filter(partial(is_not, None), map(map_response_track, tracks)))
 
     def get_recent_tracks(self, user: User, limit: Optional[int]=200, page: Optional[int]=None,
                           from_: Optional[datetime]=None, to: Optional[datetime]=None,
-                          extended: Optional[bool]=None):
+                          extended: Optional[bool]=None) -> List[Listen]:
         res = self._get_recent_tracks(user, limit, page, from_, to, extended)
         return self._map_recent_tracks(res["recenttracks"]["track"])
 
-    def get_all_tracks(self, user: User) -> List[Song]:
+    def get_all_tracks(self, user: User) -> List[Listen]:
         all_songs = []
 
         page = 1
@@ -55,4 +57,5 @@ class UserMethods(Methods):
             page_songs = self._map_recent_tracks(res["recenttracks"]["track"])
             all_songs.extend(page_songs)
 
+        user.listens.update(all_songs)
         return all_songs
