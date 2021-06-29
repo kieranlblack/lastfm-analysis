@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 from operator import is_not
 from typing import List, Optional
@@ -25,7 +25,7 @@ class UserMethods(Methods):
         }
         return self._get_request("user.getrecenttracks", params)
 
-    def _map_recent_tracks(self, tracks: List[dict]) -> List[Listen]:
+    def _map_recent_tracks(self, user: User, tracks: List[dict]) -> List[Listen]:
         def map_response_track(track: dict) -> Optional[Listen]:
             try:
                 now_playing = track["@attr"]["nowplaying"]
@@ -33,15 +33,15 @@ class UserMethods(Methods):
                     return None
             except KeyError:
                 pass
-            song = Song(track["name"], track["artist"]["#text"], track["album"]["#text"])
-            return Listen(song, int(track["date"]["uts"]))
+            song = Song(track["name"], track["album"]["#text"], track["artist"]["#text"])
+            return Listen(user, song, datetime.fromtimestamp(int(track["date"]["uts"]), timezone.utc))
         return list(filter(partial(is_not, None), map(map_response_track, tracks)))
 
     def get_recent_tracks(self, user: User, limit: Optional[int]=200, page: Optional[int]=None,
                           from_: Optional[datetime]=None, to: Optional[datetime]=None,
                           extended: Optional[bool]=None) -> List[Listen]:
         res = self._get_recent_tracks(user, limit, page, from_, to, extended)
-        return self._map_recent_tracks(res["recenttracks"]["track"])
+        return self._map_recent_tracks(user, res["recenttracks"]["track"])
 
     def get_all_tracks(self, user: User) -> List[Listen]:
         all_songs = []
@@ -54,7 +54,7 @@ class UserMethods(Methods):
             total_pages = int(attr["totalPages"])
             page = int(attr["page"]) + 1
 
-            page_songs = self._map_recent_tracks(res["recenttracks"]["track"])
+            page_songs = self._map_recent_tracks(user, res["recenttracks"]["track"])
             all_songs.extend(page_songs)
 
         user.listens.update(all_songs)

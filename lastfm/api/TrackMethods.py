@@ -1,8 +1,8 @@
 from typing import Optional
 
-from lastfm.api.Methods import Methods
 import lastfm.models.Song as Song
 import lastfm.models.User as User
+from lastfm.api.Methods import Methods
 
 
 class TrackMethods(Methods):

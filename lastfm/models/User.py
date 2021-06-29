@@ -1,11 +1,14 @@
 from typing import Set
 
-from lastfm.models.PrettyPrintable import PrettyPrintable
 import lastfm.models.Listen as Listen
+from lastfm.models.PrettyPrintable import PrettyPrintable
+from mongo.Cacheable import Cacheable
 
+class User(Cacheable, PrettyPrintable):
+    COLLECTION_NAME = "users"
 
-class User(PrettyPrintable):
     def __init__(self, username: str):
+        Cacheable._init(self, self.COLLECTION_NAME)
         self.username = username
         self.listens: Set[Listen.Listen] = set()
 
@@ -22,8 +25,34 @@ class User(PrettyPrintable):
         return len(self.unique_songs)
 
     @property
-    def dict_representation(self):
+    def unique_id(self):
+        return (self.username,)
+
+    def __eq__(self, other):
+        if isinstance(other, User):
+            return self.username == other.username
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.unique_id)
+
+    def save(self):
+        for listen in self.listens:
+            listen.save()
+        Cacheable.save(self)
+
+    @staticmethod
+    def load(o: object):
+        user = User(o["username"])
+        new_listens = []
+        for raw_listen in o["listens"]:
+            raw_listen["user"] = user
+            new_listens.append(Listen.Listen.load(raw_listen))
+        user.listens = new_listens
+        return user
+
+    def as_dict(self):
         return {
             "username": self.username,
-            "listens": self.listens,
+            "listens": list(self.listens),
         }
